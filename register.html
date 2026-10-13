@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Employee Registration</title><link rel="stylesheet" href="css/style.css"></head>
+<body class="auth-page">
+<div class="auth-card wide">
+  <a href="index.html" class="back">← Back</a><div class="auth-logo">O</div>
+  <span class="eyebrow">EMPLOYEE REGISTRATION</span><h1>Create employee account</h1>
+  <p class="muted">Choose the office center you belong to. Employee ID and email must be unique.</p>
+  <form id="registerForm" class="form-grid">
+    <label>Employee ID<input id="employeeId" placeholder="Leave blank to auto-generate"></label>
+    <label>Full Name<input id="employeeName" required placeholder="Rahul Kumar"></label>
+    <label>Email<input id="employeeEmail" type="email" required placeholder="rahul@example.com"></label>
+    <label>Mobile<input id="employeeMobile" required placeholder="9876543210"></label>
+    <label>Office Center<select id="centerId" required></select></label>
+    <label>Department<select id="department" required></select></label>
+    <label class="full-col">Designation<input id="designation" required placeholder="Software Developer"></label>
+    <label class="full-col">Password<input id="registerPassword" type="password" minlength="6" required placeholder="Minimum 6 characters"></label>
+    <button class="btn btn-primary full full-col" type="submit">Create Employee Account</button>
+  </form>
+  <div id="registerMessage" class="message"></div>
+</div><script src="js/config.js"></script><script src="js/demo-data.js"></script><script src="js/store.js"></script><script src="js/ui.js"></script><script src="js/auth.js"></script></body></html>

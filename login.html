@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Employee Login</title><link rel="stylesheet" href="css/style.css"></head>
+<body class="auth-page">
+<div class="auth-card">
+  <a href="index.html" class="back">← Back</a>
+  <div class="auth-logo">O</div><span class="eyebrow">EMPLOYEE PORTAL</span>
+  <h1>Welcome back</h1><p class="muted">Login to mark and view your attendance. Admins: <a href="admin-login.html" style="color:var(--primary);font-weight:700">use the admin portal</a>.</p>
+  <form id="loginForm">
+    <label>Employee ID or Email<input id="loginId" required placeholder="EMP001"></label>
+    <label>Password<input id="loginPassword" type="password" required placeholder="••••••••"></label>
+    <button class="btn btn-primary full" type="submit">Login</button>
+  </form>
+  <div class="demo-box" id="demoEmployees"></div>
+  <p class="auth-bottom">New employee? <a href="register.html">Register here</a></p>
+  <div id="loginMessage" class="message"></div>
+</div><script src="js/config.js"></script><script src="js/demo-data.js"></script><script src="js/store.js"></script><script src="js/ui.js"></script><script src="js/auth.js"></script></body></html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Admin Dashboard</title><link rel="stylesheet" href="css/style.css"></head>
+<body>
+<div class="app-shell">
+<aside class="sidebar"><div class="brand"><span class="brand-mark">O</span> OfficeTrack</div>
+<nav id="sideNav">
+  <a href="#overview" data-view="overview" class="active">⌂ Dashboard</a>
+  <a href="#approvals" data-view="approvals">✓ Approvals <span class="nav-count" id="navPending">0</span></a>
+  <a href="#attendance" data-view="attendance">▣ Attendance</a>
+  <a href="#employees" data-view="employees">♙ Employees</a>
+  <a href="#reports" data-view="reports">≣ Reports</a>
+</nav>
+<div class="sidebar-user"><strong id="sideName">—</strong><small id="sideMeta">—</small></div>
+<button id="adminLogoutBtn" class="sidebar-logout">↪ Logout</button></aside>
+
+<main class="main-content">
+<header class="page-header"><div><span class="eyebrow" id="roleEyebrow">ADMIN CONTROL CENTER</span><h1 id="pageTitle">Attendance Overview</h1><p class="muted" id="pageSub">Review, approve and audit employee attendance.</p></div>
+<div class="header-tools"><label class="center-filter" id="centerFilterWrap">Center<select id="centerFilter"></select></label><span class="center-pill" id="centerPill" hidden></span><div class="date-pill" id="adminDate"></div></div></header>
+
+<!-- ================= OVERVIEW ================= -->
+<div class="view active" id="view-overview">
+  <section class="stats-grid">
+    <div class="stat-card"><span>Total Employees</span><strong id="totalEmployees">0</strong></div>
+    <div class="stat-card"><span>Present Today</span><strong id="adminPresent">0</strong></div>
+    <div class="stat-card"><span>Half Day Today</span><strong id="adminHalf">0</strong></div>
+    <div class="stat-card"><span>Pending Approval</span><strong id="adminPending">0</strong></div>
+  </section>
+  <section class="stats-grid">
+    <div class="stat-card"><span>Not Marked Today</span><strong id="adminNotMarked">0</strong></div>
+    <div class="stat-card"><span>Approved Today</span><strong id="adminApproved">0</strong></div>
+    <div class="stat-card"><span>Rejected Today</span><strong id="adminRejected">0</strong></div>
+    <div class="stat-card"><span>Check-in Rate</span><strong id="adminRate">0%</strong></div>
+  </section>
+
+  <section class="panel" id="centerPanel"><div class="panel-head"><div><h2>Center-wise Attendance — Today</h2><p class="muted">Consolidated view of all 6 centers. Click a row to filter the dashboard.</p></div><button id="resetDemoBtn" class="btn btn-danger-outline">Reset Demo Data</button></div>
+    <div class="table-wrap"><table class="clickable"><thead><tr><th>Center</th><th>Employees</th><th>Present</th><th>Half Day</th><th>Not Marked</th><th>Pending</th><th>Check-in Rate</th></tr></thead><tbody id="centerTodayBody"></tbody></table></div></section>
+
+  <section class="panel"><div class="panel-head"><div><h2>Today's Attendance</h2><p class="muted">Approve or reject today's records.</p></div></div>
+    <div class="filters"><input id="searchToday" placeholder="Search employee ID or name..."><select id="statusToday"><option value="ALL">All statuses</option><option value="PENDING">Pending</option><option value="APPROVED">Approved</option><option value="REJECTED">Rejected</option></select></div>
+    <div class="table-wrap"><table><thead><tr><th>Employee</th><th>Center</th><th>Department</th><th>Check-in</th><th>Attendance</th><th>Approval</th><th>Action</th></tr></thead><tbody id="todayBody"></tbody></table></div></section>
+</div>
+
+<!-- ================= APPROVALS ================= -->
+<div class="view" id="view-approvals">
+  <section class="panel"><div class="panel-head"><div><h2>Pending Approvals</h2><p class="muted" id="approvalsSub">All attendance records waiting for a decision.</p></div><button id="approveAllBtn" class="btn btn-primary">✓ Approve All Shown</button></div>
+    <div class="filters"><input id="apSearch" placeholder="Search employee ID or name..."><select id="apType"><option value="ALL">Present &amp; Half Day</option><option value="PRESENT">Present only</option><option value="HALF DAY">Half Day only</option></select></div>
+    <div class="table-wrap"><table><thead><tr><th>Employee</th><th>Center</th><th>Date</th><th>Check-in</th><th>Attendance</th><th>Action</th></tr></thead><tbody id="approvalsBody"></tbody></table></div></section>
+</div>
+
+<!-- ================= ATTENDANCE ================= -->
+<div class="view" id="view-attendance">
+  <section class="panel"><div class="panel-head"><div><h2>Attendance Records</h2><p class="muted">Search by date range, status or employee.</p></div></div>
+    <div class="filters wrap"><label class="inline">From<input type="date" id="atFrom"></label><label class="inline">To<input type="date" id="atTo"></label><input id="atSearch" placeholder="Search employee ID or name..."><select id="atAtt"><option value="ALL">All attendance</option><option value="PRESENT">Present</option><option value="HALF DAY">Half Day</option></select><select id="atApp"><option value="ALL">All approvals</option><option value="PENDING">Pending</option><option value="APPROVED">Approved</option><option value="REJECTED">Rejected</option></select></div>
+    <div class="table-wrap"><table><thead><tr><th>Employee</th><th>Center</th><th>Date</th><th>Check-in</th><th>Attendance</th><th>Approval</th><th>Reviewed by</th><th>Action</th></tr></thead><tbody id="attendanceBody"></tbody></table></div>
+    <p class="muted foot-note" id="attendanceNote"></p></section>
+</div>
+
+<!-- ================= EMPLOYEES ================= -->
+<div class="view" id="view-employees">
+  <section class="panel"><div class="panel-head"><div><h2>Employees</h2><p class="muted" id="employeesSub">Registered employee accounts</p></div><button id="addEmployeeBtn" class="btn btn-primary">＋ Add Employee</button></div>
+    <div class="filters wrap"><input id="emSearch" placeholder="Search ID, name or email..."><select id="emDept"></select><select id="emStatus"><option value="ALL">All statuses</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option></select></div>
+    <div class="table-wrap"><table><thead><tr><th>Employee ID</th><th>Name</th><th>Email</th><th>Center</th><th>Department</th><th>Designation</th><th>Status</th><th>Action</th></tr></thead><tbody id="employeesBody"></tbody></table></div></section>
+</div>
+
+<!-- ================= REPORTS ================= -->
+<div class="view" id="view-reports">
+  <section class="panel"><div class="panel-head"><div><h2>Monthly Attendance Summary</h2><p class="muted" id="reportSub">Per-employee summary for the selected month.</p></div><div class="head-actions"><label class="inline">Month<input type="month" id="repMonth"></label><button id="exportEmpBtn" class="btn btn-outline">⬇ Export CSV</button></div></div>
+    <div id="centerReportWrap"><h3 class="sub-h">Center-wise summary</h3><div class="table-wrap"><table class="clickable"><thead><tr><th>Center</th><th>Employees</th><th>Working Days</th><th>Present</th><th>Half Day</th><th>Absent</th><th>Rejected</th><th>Pending</th><th>Attendance %</th></tr></thead><tbody id="centerReportBody"></tbody></table></div>
+    <div class="head-actions right"><button id="exportCenterBtn" class="btn btn-outline">⬇ Export center summary CSV</button></div></div>
+    <h3 class="sub-h" id="empReportTitle">Employee summary</h3>
+    <div class="table-wrap"><table><thead><tr><th>Employee</th><th>Center</th><th>Working Days</th><th>Present</th><th>Half Day</th><th>Absent</th><th>Rejected</th><th>Pending</th><th>Attendance %</th></tr></thead><tbody id="empReportBody"></tbody></table></div></section>
+</div>
+</main></div>
+<script src="js/config.js"></script><script src="js/demo-data.js"></script><script src="js/store.js"></script><script src="js/ui.js"></script><script src="js/admin.js"></script></body></html>

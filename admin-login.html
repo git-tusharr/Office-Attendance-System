@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Admin Login</title><link rel="stylesheet" href="css/style.css"></head>
+<body class="auth-page">
+<div class="auth-card">
+  <a href="index.html" class="back">← Back</a><div class="auth-logo">A</div>
+  <span class="eyebrow">ADMIN PORTAL</span><h1>Admin login</h1><p class="muted">Super Admin (Bhopal Head Office) and Center Admins sign in here.</p>
+  <form id="adminLoginForm">
+    <label>Admin ID<input id="adminId" required placeholder="admin or jabalpur.admin" autocomplete="username"></label>
+    <label>Password<input id="adminPassword" type="password" required placeholder="••••••••"></label>
+    <button class="btn btn-primary full" type="submit">Login as Admin</button>
+  </form>
+  <div class="demo-box" id="demoAdmins"></div>
+  <div id="adminLoginMessage" class="message"></div>
+</div><script src="js/config.js"></script><script src="js/demo-data.js"></script><script src="js/store.js"></script><script src="js/ui.js"></script><script src="js/auth.js"></script></body></html>

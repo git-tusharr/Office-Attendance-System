@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OfficeTrack | Employee Attendance</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="landing">
+<header class="topbar">
+  <div class="brand"><span class="brand-mark">O</span><span>OfficeTrack</span></div>
+  <div class="top-actions"><a href="login.html" class="btn btn-outline">Employee Login</a><a href="admin-login.html" class="btn btn-primary">Admin Login</a></div>
+</header>
+<main class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow">EMPLOYEE ATTENDANCE SYSTEM</span>
+    <h1>Simple attendance.<br><span>Clear records.</span></h1>
+    <p>Mark daily attendance, track approval status and maintain a transparent attendance history for every employee across all six offices.</p>
+    <div class="hero-actions"><a href="login.html" class="btn btn-primary btn-lg">Employee Login</a><a href="register.html" class="btn btn-outline btn-lg">Register Employee</a></div>
+    <div class="trust-row"><span>✓ One attendance per day</span><span>✓ Admin approval</span><span>✓ Late rule built in</span><span>✓ 6 office centers</span></div>
+  </div>
+  <div class="hero-card">
+    <div class="mock-top"><span>Today's Attendance</span><span class="live-dot">● Live</span></div>
+    <div class="mock-profile"><div class="avatar">RK</div><div><strong>Rahul Kumar</strong><small>EMP001 · Development · Bhopal</small></div><span class="status present">Present</span></div>
+    <div class="time-box"><small>Check-in time</small><strong>08:57 AM</strong><span>Office start: 09:00 AM</span></div>
+    <div class="mock-footer"><span>Approval</span><strong class="approved">✓ Approved</strong></div>
+  </div>
+</main>
+<section class="offices"><span class="eyebrow">OUR OFFICES</span><h2>Six centers, one attendance system</h2><div class="office-grid" id="officeGrid"></div></section>
+<footer class="footer">OfficeTrack · Frontend demo · HTML + CSS + JavaScript</footer>
+<script src="js/config.js"></script>
+<script>
+(function(){var g=document.getElementById("officeGrid");g.innerHTML=OT_CONFIG.LOCATIONS.map(function(l){return '<div class="office-card'+(l.isHeadOffice?' head':'')+'"><strong>'+l.name+'</strong><small>'+l.state+'</small>'+(l.isHeadOffice?'<span class="status pending">Head Office</span>':'')+'</div>'}).join("")})();
+</script>
+</body>
+</html>
