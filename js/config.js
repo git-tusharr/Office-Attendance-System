@@ -25,6 +25,26 @@ window.OT_CONFIG = {
     LOCALE: "en-IN"
   },
 
+  /* GPS check-in verification (browser Geolocation API).
+     Only centers listed in OFFICES are restricted. Centers that are not listed
+     (Jabalpur, Gwalior, Ratlam, Ujjain, Nagpur) check in exactly as before.
+     To add a center later, add an entry keyed by its LOCATIONS id with its real coordinates.
+     To change the Bhopal radius, edit radiusMeters below. */
+  GEOFENCE: {
+    ENABLED: true,                 // set false to switch the GPS restriction off everywhere
+    OFFICES: {
+      BPL: {
+        label: "Bhopal office",
+        latitude: 23.231264,
+        longitude: 77.435580,
+        radiusMeters: 50,          // horizontal distance only (GPS cannot detect the floor)
+        maxAccuracyMeters: 130      // readings less accurate than this must be retried
+      }
+    },
+    TIMEOUT_MS: 20000,             // how long to wait for a GPS fix
+    MAX_READING_AGE_MS: 60000      // a location reading older than this is rejected at save time
+  },
+
   /* How many weekdays of history the demo data generates */
   DEMO_HISTORY_DAYS: 45,
   DEMO_EMPLOYEE_PASSWORD: "123456",

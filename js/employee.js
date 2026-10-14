@@ -5,6 +5,7 @@ OT.init();
 const me0 = OT.requireRole(["EMPLOYEE"], "login.html");
 const $ = id => document.getElementById(id);
 const CFG = window.OT_CONFIG, OFFICE = CFG.OFFICE;
+let checking = false; // true while a location check is in progress
 
 function render() {
   const me = OT.currentUser();
@@ -20,12 +21,14 @@ function render() {
   $("sideName").textContent = me.name;
   $("sideMeta").textContent = `${me.id} · ${OT.centerName(me.centerId)}`;
   $("officeRuleText").textContent = `Office start ${UI.fmt12(OFFICE.START)} · Present up to ${UI.fmt12(OFFICE.PRESENT_CUTOFF)}`;
+  const geoRule = OTLocation.getRule(me.centerId);
   $("policyList").innerHTML = `
     <li>One attendance record per employee per day.</li>
     <li>Office start time is <b>${UI.fmt12(OFFICE.START)}</b>.</li>
     <li>Check-in up to and including <b>${UI.fmt12(OFFICE.PRESENT_CUTOFF)}</b> is Present.</li>
     <li>Check-in after ${UI.fmt12(OFFICE.PRESENT_CUTOFF)} is Half Day.</li>
-    <li>Employee cannot edit or delete attendance.</li>
+    <li>Employee cannot edit or delete attendance.</li>${geoRule ? `
+    <li>Check-in needs location access: you must be within <b>${geoRule.radiusMeters} m</b> of the ${UI.esc(geoRule.label)} (the staircase below the office counts).</li>` : ""}
     <li>Your <b>${UI.esc(OT.centerName(me.centerId))}</b> center admin approves or rejects each record.</li>`;
   $("myDetails").innerHTML = [["Employee ID", me.id], ["Center", OT.centerLabel(me.centerId)], ["Department", me.department], ["Designation", me.designation], ["Email", me.email]]
     .map(([k, v]) => `<dt>${k}</dt><dd>${UI.esc(v)}</dd>`).join("");
@@ -35,12 +38,14 @@ function render() {
   const btn = $("markBtn"), st = $("todayStatus"), info = $("checkInInfo");
   if (td) {
     st.textContent = td.attendanceStatus; st.className = "status " + UI.cls(td.attendanceStatus);
-    info.innerHTML = `Check-in: <b>${UI.fmtTime(td.checkIn, true)}</b> · Approval: ${UI.badge(td.approvalStatus)}`;
+    info.innerHTML = `Check-in: <b>${UI.fmtTime(td.checkIn, true)}</b> · Approval: ${UI.badge(td.approvalStatus)}`
+      + (td.location ? `<br>Location verified: ${td.location.distanceMeters} m from office (GPS ±${td.location.accuracyMeters} m)` : "");
+    $("retryLocBtn").hidden = true;
     btn.disabled = true; btn.textContent = "✓ Attendance Already Marked"; btn.style.opacity = ".55";
   } else {
     st.textContent = "Not Marked"; st.className = "status pending";
     info.textContent = "No attendance marked today.";
-    btn.disabled = false; btn.textContent = "Mark Attendance"; btn.style.opacity = "1";
+    btn.disabled = checking; btn.textContent = checking ? "Checking location…" : "Mark Attendance"; btn.style.opacity = checking ? ".55" : "1";
   }
 
   // This month's summary
@@ -66,17 +71,57 @@ function render() {
     || `<tr><td colspan="5" class="empty">No attendance records match.</td></tr>`;
 }
 
-$("markBtn").addEventListener("click", () => {
+function showLocInfo(r) {
+  const box = $("locInfo");
+  if (!r || r.distance == null) { box.hidden = true; return; }
+  box.hidden = false;
+  box.textContent = `Distance from ${r.label}: about ${OTLocation.fmtDistance(r.distance)} · GPS accuracy: ±${Math.round(r.accuracy)} m · Allowed: within ${r.radius} m`;
+}
+
+function finishCheckIn(me, at, geo) {
+  const m = $("markMessage");
+  const res = OT.markAttendance(me.id, at, geo);
+  if (!res.ok) {
+    UI.msg(m, res.error, "error");
+    if (res.location) $("retryLocBtn").hidden = false;
+    render(); return;
+  }
+  $("retryLocBtn").hidden = true;
+  UI.msg(m, `Attendance marked at ${UI.fmtTime(res.record.checkIn, true)} as ${res.record.attendanceStatus}. Waiting for approval from ${OT.centerName(me.centerId)} center admin.`, "success");
+  render();
+}
+
+async function attemptCheckIn() {
+  if (checking) return;
   const me = OT.currentUser(); if (!me) return location.replace("login.html");
   let at = null;
   const dt = $("demoTime").value;
   if (dt) { const [h, m] = dt.split(":").map(Number); at = new Date(); at.setHours(h, m, 0, 0); }
-  const res = OT.markAttendance(me.id, at);
   const m = $("markMessage");
-  if (!res.ok) { UI.msg(m, res.error, "error"); render(); return; }
-  UI.msg(m, `Attendance marked at ${UI.fmtTime(res.record.checkIn, true)} as ${res.record.attendanceStatus}. Waiting for approval from ${OT.centerName(me.centerId)} center admin.`, "success");
-  render();
-});
+
+  // Centers without a GPS rule keep the original behaviour
+  if (!OTLocation.getRule(me.centerId)) return finishCheckIn(me, at, null);
+
+  checking = true; $("retryLocBtn").hidden = true; $("locInfo").hidden = true; render();
+  UI.msg(m, "Checking your location… if your browser asks, please choose Allow.", "info");
+  let pos;
+  try { pos = await OTLocation.getPosition(); }
+  finally { checking = false; }
+  if (!pos.ok) {
+    UI.msg(m, pos.message, pos.code === "TIMEOUT" || pos.code === "UNAVAILABLE" ? "warning" : "error");
+    $("retryLocBtn").hidden = false; render(); return;
+  }
+  const ev = OTLocation.evaluate(pos.reading, me.centerId);
+  showLocInfo(ev);
+  if (!ev.ok) {
+    UI.msg(m, ev.message, ev.status === "OUTSIDE" ? "error" : "warning");
+    $("retryLocBtn").hidden = false; render(); return;
+  }
+  finishCheckIn(me, at, pos.reading);
+}
+
+$("markBtn").addEventListener("click", attemptCheckIn);
+$("retryLocBtn").addEventListener("click", attemptCheckIn);
 $("demoTimeClear").addEventListener("click", () => { $("demoTime").value = ""; });
 $("histMonth").addEventListener("change", render);
 $("histApproval").addEventListener("change", render);

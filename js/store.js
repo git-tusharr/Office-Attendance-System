@@ -287,8 +287,10 @@
   };
   OT.attendanceOf = empId => OT.getAttendance().filter(a => a.employeeId === empId);
 
-  /* Employee check-in. `at` (Date) is optional — only used by the demo time override. */
-  OT.markAttendance = function (empId, at) {
+  /* Employee check-in. `at` (Date) is optional — only used by the demo time override.
+     `geo` is a fresh location reading from OTLocation.getPosition(). It is REQUIRED for centers that have a
+     GPS rule in OT_CONFIG.GEOFENCE (currently Bhopal) and is re-verified here; nothing is saved if it fails. */
+  OT.markAttendance = function (empId, at, geo) {
     const emp = OT.getEmployee(empId);
     if (!emp || emp.status !== "ACTIVE") return { ok: false, error: "Employee account is not active." };
     const now = at || new Date();
@@ -297,11 +299,23 @@
     const id = recordId(empId, date);
     if (att.some(a => a.id === id || (a.employeeId === empId && a.date === date)))
       return { ok: false, error: "Attendance is already marked for today." };
+
+    /* GPS rule (fails closed: if the rule exists but the location module is missing, check-in is refused) */
+    let locationMeta = null;
+    const ruleOn = C.GEOFENCE && C.GEOFENCE.ENABLED && C.GEOFENCE.OFFICES && C.GEOFENCE.OFFICES[emp.centerId];
+    if (ruleOn) {
+      if (!window.OTLocation) return { ok: false, error: "Location verification is unavailable, so attendance can't be marked right now." };
+      const v = window.OTLocation.verify(geo, emp.centerId);
+      if (!v.ok) return { ok: false, error: v.message, location: v };
+      locationMeta = { verified: true, distanceMeters: Math.round(v.distance), accuracyMeters: Math.round(v.accuracy), verifiedAt: new Date().toISOString() };
+    }
+
     const rec = {
       id, employeeId: empId, centerId: emp.centerId, date, checkIn: now.toISOString(),
       attendanceStatus: OT.classify(now), approvalStatus: "PENDING", approvedBy: null, approvedAt: null,
       createdAt: new Date().toISOString()
     };
+    if (locationMeta) rec.location = locationMeta;
     att.push(rec); saveAttendance(att);
     return { ok: true, record: rec };
   };

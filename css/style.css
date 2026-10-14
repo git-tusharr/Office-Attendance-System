@@ -40,3 +40,5 @@ tr.totals td{font-weight:800;background:#f8fafc}
 @media(max-width:600px){.office-grid{grid-template-columns:1fr 1fr}.header-tools{margin-top:12px}.filters.wrap{display:grid;gap:10px}.filters label.inline{justify-content:space-between}.filters.wrap input,.filters.wrap select{max-width:none;margin:0}.details{grid-template-columns:90px 1fr}.modal{padding:20px}.center-filter{width:100%}.center-filter select{flex:1}.panel-head{flex-wrap:wrap}}
 [hidden]{display:none!important}
 #histApproval{max-width:240px}#histMonth{max-width:200px}
+.message.info{display:block;color:var(--blue);background:var(--blue-bg)}.message.warning{display:block;color:var(--yellow);background:var(--yellow-bg)}
+#locInfo[hidden],#retryLocBtn[hidden]{display:none}#retryLocBtn{margin-top:4px}
