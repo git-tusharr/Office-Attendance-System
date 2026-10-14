@@ -37,8 +37,8 @@ window.OT_CONFIG = {
         label: "Bhopal office",
         latitude: 23.231264,
         longitude: 77.435580,
-        radiusMeters: 50,          // horizontal distance only (GPS cannot detect the floor)
-        maxAccuracyMeters: 130      // readings less accurate than this must be retried
+        radiusMeters: 30,          // horizontal distance only (GPS cannot detect the floor)
+        maxAccuracyMeters: 30      // readings less accurate than this must be retried
       }
     },
     TIMEOUT_MS: 20000,             // how long to wait for a GPS fix
