@@ -302,12 +302,12 @@
 
     /* GPS rule (fails closed: if the rule exists but the location module is missing, check-in is refused) */
     let locationMeta = null;
-    const ruleOn = C.GEOFENCE && C.GEOFENCE.ENABLED && C.GEOFENCE.OFFICES && C.GEOFENCE.OFFICES[emp.centerId];
+    const ruleOn = window.OTLocation ? !!window.OTLocation.getRule(emp.centerId) : (C.GEOFENCE && C.GEOFENCE.ENABLED && C.GEOFENCE.OFFICES && C.GEOFENCE.OFFICES[emp.centerId]);
     if (ruleOn) {
       if (!window.OTLocation) return { ok: false, error: "Location verification is unavailable, so attendance can't be marked right now." };
       const v = window.OTLocation.verify(geo, emp.centerId);
       if (!v.ok) return { ok: false, error: v.message, location: v };
-      locationMeta = { verified: true, distanceMeters: Math.round(v.distance), accuracyMeters: Math.round(v.accuracy), verifiedAt: new Date().toISOString() };
+      locationMeta = { verified: true, distanceMeters: Number(v.distance.toFixed(1)), accuracyMeters: Number(v.accuracy.toFixed(1)), verifiedAt: new Date().toISOString() };
     }
 
     const rec = {
@@ -318,6 +318,30 @@
     if (locationMeta) rec.location = locationMeta;
     att.push(rec); saveAttendance(att);
     return { ok: true, record: rec };
+  };
+
+  /* Remove an employee's attendance record (default today) to allow re-marking and testing */
+  OT.removeAttendance = function (empId, date) {
+    const targetDate = date || today();
+    const id = recordId(empId, targetDate);
+    const att = OT.getAttendance();
+    const initialLen = att.length;
+    const filtered = att.filter(a => !(a.id === id || (a.employeeId === empId && a.date === targetDate)));
+    saveAttendance(filtered);
+    return { ok: true, removed: initialLen !== filtered.length };
+  };
+
+  /* Admin delete attendance record by ID */
+  OT.deleteAttendanceRecord = function (user, recordId) {
+    if (!user || user.role === "EMPLOYEE") return { ok: false, error: "Not allowed." };
+    const att = OT.getAttendance();
+    const idx = att.findIndex(a => a.id === recordId);
+    if (idx < 0) return { ok: false, error: "Record not found." };
+    const rec = att[idx];
+    if (!OT.canAccessCenter(user, rec.centerId)) return { ok: false, error: "You can only manage your own center." };
+    att.splice(idx, 1);
+    saveAttendance(att);
+    return { ok: true };
   };
 
   /* decision: APPROVED | REJECTED | PENDING (reopen). ids = array of record ids */

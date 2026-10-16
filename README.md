@@ -73,34 +73,35 @@ Employees of the **Bhopal** center must be physically at the office to check in.
 |---|---|
 | Latitude | `23.231264` |
 | Longitude | `77.435580` |
-| Allowed radius | `20` metres (`radiusMeters`) |
+| Allowed radius | `25` metres (`radiusMeters`) |
 | Max GPS error accepted | `±25` metres (`maxAccuracyMeters`) |
 
 **How it works**
-1. When a Bhopal employee clicks **Mark Attendance**, the browser asks for location permission (`navigator.geolocation.getCurrentPosition`, high accuracy, 20 s timeout, no cached position).
-2. The distance to the office is calculated with the **Haversine formula** (`js/location.js`).
-3. If the GPS accuracy is worse than ±25 m the employee is asked to **retry** (they are not treated as "outside"), and attendance is not saved.
-4. If the distance is more than 20 m, check-in is blocked with the distance shown. If it is 20 m or less (and accuracy is acceptable), attendance is saved with the distance and accuracy.
-5. Permission denied, GPS unavailable, timeout, insecure page and unsupported-browser cases each show a clear message and a **Retry location check** button. Attendance is never saved unless the location is verified.
-6. The check is also enforced in the data layer (`OT.markAttendance` in `js/store.js`), which re-verifies a fresh reading before saving. Records store `location: { verified, distanceMeters, accuracyMeters, verifiedAt }` (raw coordinates are not stored).
+1. When a Bhopal employee clicks **Mark Attendance**, the browser initiates high-precision multi-sample satellite acquisition (`navigator.geolocation.watchPosition` with satellite stabilization, high accuracy, and progress updates).
+2. The distance to the office is calculated using the spherical **Haversine formula** (`js/location.js`), formatted with 0.1 m precision.
+3. If the GPS accuracy is worse than ±25 m the employee is prompted to wait for satellite lock or retry (attendance is not saved).
+4. If the distance is within the **25 m limit** (and precision is acceptable), attendance is verified and saved with distance and accuracy metrics. If outside 25 m, check-in is blocked with exact overage meters displayed.
+5. Permission denied, GPS unavailable, timeout, insecure page and unsupported-browser cases each show a clear message and a **Retry location check** button.
+6. The check is also enforced in the data layer (`OT.markAttendance` in `js/store.js`), which re-verifies a fresh reading before saving. Records store `location: { verified, distanceMeters, accuracyMeters, verifiedAt }`.
+7. Admins can calibrate or update the office coordinates and boundary directly from the **Geofence & Office** tab on the Admin Dashboard using their device's current GPS or manual coordinate entry.
 
-**Staircase / floor:** the office is on the 3rd floor. GPS measures **horizontal** distance only, so the staircase area below the office works as long as it is within the radius. GPS cannot tell which floor someone is on.
+**Staircase / floor:** the office is on the 3rd floor. GPS measures **horizontal** distance only, so the staircase and entrance area below the office work seamlessly as long as they are within the 25 m perimeter. GPS cannot tell which floor someone is on.
 
 ### Changing the location or radius
-Edit `js/config.js`:
+You can calibrate the office coordinates directly from the **Admin Dashboard** (`#geofence`), or edit `js/config.js`:
 ```js
 GEOFENCE: {
   ENABLED: true,                // false = switch the GPS restriction off everywhere
   OFFICES: {
     BPL: { label: "Bhopal office", latitude: 23.231264, longitude: 77.435580,
-           radiusMeters: 20, maxAccuracyMeters: 25 }
+           radiusMeters: 25, maxAccuracyMeters: 25 }
   },
   TIMEOUT_MS: 20000,
   MAX_READING_AGE_MS: 60000
 }
 ```
-- Change `radiusMeters` to widen/narrow the allowed area. Because GPS indoors is often ±10–30 m, a 20 m radius can reject people who really are inside; if that happens, raise the radius or test on-site.
-- To restrict another center later, add an entry keyed by its id from `LOCATIONS` (e.g. `JBP`) with that office's **real** coordinates.
+- The geofence radius limit is set to **25 meters**.
+- To restrict another center later, add an entry keyed by its id from `LOCATIONS` (e.g. `JBP`) or calibrate it via the Admin Dashboard.
 
 ### Setup for GPS to work
 - Browsers only provide location on **HTTPS** pages or **http://localhost**. Opening the app over a plain `http://` network address will be blocked. For phones, host the folder on an HTTPS site (e.g. GitHub Pages or Netlify).

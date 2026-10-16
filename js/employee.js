@@ -7,6 +7,41 @@ const $ = id => document.getElementById(id);
 const CFG = window.OT_CONFIG, OFFICE = CFG.OFFICE;
 let checking = false; // true while a location check is in progress
 
+function updateTelemetry(ev) {
+  const box = $("geoTelemetry");
+  if (!box) return;
+  if (!ev || ev.distance == null) {
+    box.hidden = true;
+    return;
+  }
+  box.hidden = false;
+  const radius = ev.radius || 25;
+  $("geoDistanceVal").textContent = OTLocation.fmtDistance(ev.distance);
+  $("geoLimitVal").textContent = `${radius}.0 m`;
+  $("geoAccuracyVal").textContent = `±${ev.accuracy != null ? Number(ev.accuracy).toFixed(1) : "—"} m`;
+
+  // Scale 0 to (radius * 2) meters
+  const pct = Math.min(100, Math.max(0, Math.round((ev.distance / (radius * 2)) * 100)));
+  const fill = $("geoMeterFill");
+  fill.style.width = pct + "%";
+  fill.className = "geo-meter-fill " + (ev.ok ? "in-range" : ev.distance <= radius * 1.5 ? "warning" : "out-range");
+
+  const badge = $("geoStatusBadge");
+  if (ev.ok) {
+    badge.textContent = `✓ In Range (≤ ${radius} m)`;
+    badge.className = "status present";
+  } else if (ev.status === "POOR_ACCURACY") {
+    badge.textContent = "⚠️ Weak GPS";
+    badge.className = "status half";
+  } else if (ev.status === "OUTSIDE") {
+    badge.textContent = `✕ Outside ${radius}m Boundary`;
+    badge.className = "status rejected";
+  } else {
+    badge.textContent = ev.status || "Checking";
+    badge.className = "status pending";
+  }
+}
+
 function render() {
   const me = OT.currentUser();
   if (!me || me.role !== "EMPLOYEE") return location.replace("login.html");
@@ -22,13 +57,14 @@ function render() {
   $("sideMeta").textContent = `${me.id} · ${OT.centerName(me.centerId)}`;
   $("officeRuleText").textContent = `Office start ${UI.fmt12(OFFICE.START)} · Present up to ${UI.fmt12(OFFICE.PRESENT_CUTOFF)}`;
   const geoRule = OTLocation.getRule(me.centerId);
+  const limitMeters = geoRule ? (geoRule.radiusMeters || 25) : 25;
   $("policyList").innerHTML = `
     <li>One attendance record per employee per day.</li>
     <li>Office start time is <b>${UI.fmt12(OFFICE.START)}</b>.</li>
     <li>Check-in up to and including <b>${UI.fmt12(OFFICE.PRESENT_CUTOFF)}</b> is Present.</li>
     <li>Check-in after ${UI.fmt12(OFFICE.PRESENT_CUTOFF)} is Half Day.</li>
     <li>Employee cannot edit or delete attendance.</li>${geoRule ? `
-    <li>Check-in needs location access: you must be within <b>${geoRule.radiusMeters} m</b> of the ${UI.esc(geoRule.label)} (the staircase below the office counts).</li>` : ""}
+    <li>Check-in needs high-accuracy location access: you must be within <b>${limitMeters} m</b> of the ${UI.esc(geoRule.label)} (the 25-meter perimeter includes the staircase and entrance).</li>` : ""}
     <li>Your <b>${UI.esc(OT.centerName(me.centerId))}</b> center admin approves or rejects each record.</li>`;
   $("myDetails").innerHTML = [["Employee ID", me.id], ["Center", OT.centerLabel(me.centerId)], ["Department", me.department], ["Designation", me.designation], ["Email", me.email]]
     .map(([k, v]) => `<dt>${k}</dt><dd>${UI.esc(v)}</dd>`).join("");
@@ -39,13 +75,15 @@ function render() {
   if (td) {
     st.textContent = td.attendanceStatus; st.className = "status " + UI.cls(td.attendanceStatus);
     info.innerHTML = `Check-in: <b>${UI.fmtTime(td.checkIn, true)}</b> · Approval: ${UI.badge(td.approvalStatus)}`
-      + (td.location ? `<br>Location verified: ${td.location.distanceMeters} m from office (GPS ±${td.location.accuracyMeters} m)` : "");
+      + (td.location ? `<br>Location verified: ${td.location.distanceMeters} m from office (within 25m boundary; GPS ±${td.location.accuracyMeters} m)` : "");
     $("retryLocBtn").hidden = true;
+    if ($("resetTodayBtn")) $("resetTodayBtn").hidden = false;
     btn.disabled = true; btn.textContent = "✓ Attendance Already Marked"; btn.style.opacity = ".55";
   } else {
     st.textContent = "Not Marked"; st.className = "status pending";
     info.textContent = "No attendance marked today.";
-    btn.disabled = checking; btn.textContent = checking ? "Checking location…" : "Mark Attendance"; btn.style.opacity = checking ? ".55" : "1";
+    if ($("resetTodayBtn")) $("resetTodayBtn").hidden = true;
+    btn.disabled = checking; btn.textContent = checking ? "Acquiring satellites…" : "Mark Attendance"; btn.style.opacity = checking ? ".55" : "1";
   }
 
   // This month's summary
@@ -75,7 +113,7 @@ function showLocInfo(r) {
   const box = $("locInfo");
   if (!r || r.distance == null) { box.hidden = true; return; }
   box.hidden = false;
-  box.textContent = `Distance from ${r.label}: about ${OTLocation.fmtDistance(r.distance)} · GPS accuracy: ±${Math.round(r.accuracy)} m · Allowed: within ${r.radius} m`;
+  box.textContent = `Distance to ${r.label}: ${OTLocation.fmtDistance(r.distance)} · GPS precision: ±${Number(r.accuracy).toFixed(1)} m · Limit: within ${r.radius} m`;
 }
 
 function finishCheckIn(me, at, geo) {
@@ -87,8 +125,69 @@ function finishCheckIn(me, at, geo) {
     render(); return;
   }
   $("retryLocBtn").hidden = true;
-  UI.msg(m, `Attendance marked at ${UI.fmtTime(res.record.checkIn, true)} as ${res.record.attendanceStatus}. Waiting for approval from ${OT.centerName(me.centerId)} center admin.`, "success");
+  UI.msg(m, `Attendance marked at ${UI.fmtTime(res.record.checkIn, true)} as ${res.record.attendanceStatus}. Location verified (${res.record.location ? res.record.location.distanceMeters + ' m from office' : 'Not required'}).`, "success");
   render();
+}
+
+/* Helper to acquire location: uses simulation if selected, otherwise real multi-sample satellite lock */
+async function acquireLocation(centerId, onProgress) {
+  const sim = $("demoLocation") ? $("demoLocation").value : "REAL";
+  if (sim === "INSIDE") {
+    const reading = OTLocation.simulate(centerId, 12.5, 4.0);
+    return { ok: true, reading };
+  } else if (sim === "EDGE") {
+    const reading = OTLocation.simulate(centerId, 24.5, 4.5);
+    return { ok: true, reading };
+  } else if (sim === "OUTSIDE") {
+    const reading = OTLocation.simulate(centerId, 42.0, 5.0);
+    return { ok: true, reading };
+  }
+  // Real high-accuracy GPS with multi-sample satellite lock
+  return await OTLocation.getPosition({ onProgress });
+}
+
+async function testLocationOnly() {
+  if (checking) return;
+  const me = OT.currentUser();
+  if (!me) return location.replace("login.html");
+  const rule = OTLocation.getRule(me.centerId);
+  const m = $("markMessage");
+  if (!rule) {
+    UI.msg(m, `Center ${OT.centerName(me.centerId)} does not have GPS restriction enabled.`, "info");
+    return;
+  }
+
+  checking = true;
+  $("retryLocBtn").hidden = true;
+  $("locInfo").hidden = true;
+  render();
+  UI.msg(m, "Locking onto GPS satellites for highest accuracy… please keep device still.", "info");
+
+  let pos;
+  try {
+    pos = await acquireLocation(me.centerId, p => {
+      UI.msg(m, `Locking satellites… precision ±${Number(p.bestAccuracy).toFixed(1)} m (sample #${p.sampleCount})`, "info");
+    });
+  } finally {
+    checking = false;
+    render();
+  }
+
+  if (!pos.ok) {
+    UI.msg(m, pos.message, pos.code === "TIMEOUT" || pos.code === "UNAVAILABLE" ? "warning" : "error");
+    $("retryLocBtn").hidden = false;
+    return;
+  }
+
+  const ev = OTLocation.evaluate(pos.reading, me.centerId);
+  showLocInfo(ev);
+  updateTelemetry(ev);
+  if (ev.ok) {
+    UI.msg(m, `✓ High-precision GPS lock confirmed: ${OTLocation.fmtDistance(ev.distance)} from office (within ${ev.radius}m limit; accuracy ±${Number(ev.accuracy).toFixed(1)}m).`, "success");
+  } else {
+    UI.msg(m, ev.message, ev.status === "OUTSIDE" ? "error" : "warning");
+    $("retryLocBtn").hidden = false;
+  }
 }
 
 async function attemptCheckIn() {
@@ -103,16 +202,23 @@ async function attemptCheckIn() {
   if (!OTLocation.getRule(me.centerId)) return finishCheckIn(me, at, null);
 
   checking = true; $("retryLocBtn").hidden = true; $("locInfo").hidden = true; render();
-  UI.msg(m, "Checking your location… if your browser asks, please choose Allow.", "info");
+  UI.msg(m, "Locking onto GPS satellites for high accuracy… if your browser asks, choose Allow.", "info");
+  
   let pos;
-  try { pos = await OTLocation.getPosition(); }
+  try {
+    pos = await acquireLocation(me.centerId, p => {
+      UI.msg(m, `Acquiring satellite lock… precision ±${Number(p.bestAccuracy).toFixed(1)} m (refining fix)`, "info");
+    });
+  }
   finally { checking = false; }
+  
   if (!pos.ok) {
     UI.msg(m, pos.message, pos.code === "TIMEOUT" || pos.code === "UNAVAILABLE" ? "warning" : "error");
     $("retryLocBtn").hidden = false; render(); return;
   }
   const ev = OTLocation.evaluate(pos.reading, me.centerId);
   showLocInfo(ev);
+  updateTelemetry(ev);
   if (!ev.ok) {
     UI.msg(m, ev.message, ev.status === "OUTSIDE" ? "error" : "warning");
     $("retryLocBtn").hidden = false; render(); return;
@@ -122,10 +228,33 @@ async function attemptCheckIn() {
 
 $("markBtn").addEventListener("click", attemptCheckIn);
 $("retryLocBtn").addEventListener("click", attemptCheckIn);
+$("testLocBtn").addEventListener("click", testLocationOnly);
+if ($("demoLocation")) {
+  $("demoLocation").addEventListener("change", () => {
+    // Re-test location when simulation option changes
+    testLocationOnly();
+  });
+}
 $("demoTimeClear").addEventListener("click", () => { $("demoTime").value = ""; });
 $("histMonth").addEventListener("change", render);
 $("histApproval").addEventListener("change", render);
 $("logoutBtn").onclick = () => OT.logout("login.html");
+
+function handleResetAttendance() {
+  const me = OT.currentUser();
+  if (!me) return;
+  const res = OT.removeAttendance(me.id);
+  const m = $("markMessage");
+  if (res.ok) {
+    UI.msg(m, "Today's attendance record removed. You can now test marking attendance again.", "info");
+    if ($("locInfo")) $("locInfo").hidden = true;
+    if ($("geoTelemetry")) $("geoTelemetry").hidden = true;
+    render();
+  }
+}
+
+if ($("resetTodayBtn")) $("resetTodayBtn").addEventListener("click", handleResetAttendance);
+if ($("demoResetBtn")) $("demoResetBtn").addEventListener("click", handleResetAttendance);
 document.querySelectorAll("[data-nav]").forEach(a => a.addEventListener("click", e => {
   e.preventDefault();
   document.querySelectorAll("[data-nav]").forEach(x => x.classList.toggle("active", x === a));

@@ -13,8 +13,73 @@
 </section>
 <section class="dashboard-grid">
 <div class="panel attendance-panel"><div class="panel-head"><div><h2>Today's Attendance</h2><p class="muted" id="officeRuleText"></p></div><span id="todayStatus" class="status pending">Not Marked</span></div>
-<div class="attendance-big"><div class="clock" id="liveClock">--:--:--</div><p>Current time</p><div id="checkInInfo" class="check-info">No attendance marked today.</div><button id="markBtn" class="btn btn-primary btn-lg">Mark Attendance</button><div id="markMessage" class="message"></div><div id="locInfo" class="check-info" hidden></div><button type="button" id="retryLocBtn" class="small-btn neutral-btn" hidden>↻ Retry location check</button>
-<div class="demo-box demo-time"><strong>Demo tool</strong> · test the 09:15 rule with a different check-in time<br><input type="time" id="demoTime" step="60" aria-label="Demo check-in time"> <button type="button" class="small-btn" id="demoTimeClear">Use real time</button></div></div></div>
+<div class="attendance-big">
+  <div class="clock" id="liveClock">--:--:--</div>
+  <p>Current time</p>
+  <div id="checkInInfo" class="check-info">No attendance marked today.</div>
+  
+  <!-- GPS Geofence Telemetry Widget -->
+  <div id="geoTelemetry" class="geo-telemetry" hidden>
+    <div class="geo-header">
+      <span class="geo-title">📍 GPS Geofence Telemetry</span>
+      <span id="geoStatusBadge" class="status pending">Checking…</span>
+    </div>
+    <div class="geo-grid">
+      <div class="geo-item">
+        <small>Distance to Office</small>
+        <strong id="geoDistanceVal">—</strong>
+      </div>
+      <div class="geo-item">
+        <small>Allowed Limit</small>
+        <strong id="geoLimitVal">25.0 m</strong>
+      </div>
+      <div class="geo-item">
+        <small>GPS Precision</small>
+        <strong id="geoAccuracyVal">—</strong>
+      </div>
+    </div>
+    <div class="geo-meter-wrap">
+      <div class="geo-meter-bar">
+        <div id="geoMeterFill" class="geo-meter-fill" style="width: 0%;"></div>
+      </div>
+      <div class="geo-meter-labels">
+        <span>0 m</span>
+        <span class="limit-marker">25 m Limit</span>
+        <span>50 m+</span>
+      </div>
+    </div>
+  </div>
+
+  <button id="markBtn" class="btn btn-primary btn-lg">Mark Attendance</button>
+  <div id="markMessage" class="message"></div>
+  <div id="locInfo" class="check-info" hidden></div>
+  <div style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+    <button type="button" id="testLocBtn" class="small-btn neutral-btn">🛰 Test GPS &amp; 25m Boundary</button>
+    <button type="button" id="retryLocBtn" class="small-btn neutral-btn" hidden>↻ Retry location check</button>
+    <button type="button" id="resetTodayBtn" class="small-btn danger-btn" hidden>🗑 Reset Today's Attendance</button>
+  </div>
+
+  <div class="demo-box demo-time">
+    <strong>Demo &amp; Testing Tools</strong>
+    <div style="margin-top:8px;">
+      <label style="font-weight:600;font-size:12px;display:block;margin-bottom:4px;">Test Check-in Time (09:15 rule):</label>
+      <input type="time" id="demoTime" step="60" aria-label="Demo check-in time">
+      <button type="button" class="small-btn" id="demoTimeClear">Use real time</button>
+    </div>
+    <div style="margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;">
+      <label style="font-weight:600;font-size:12px;display:block;margin-bottom:4px;">GPS Simulator (Test 25m boundary without moving):</label>
+      <select id="demoLocation" aria-label="GPS Simulator Mode">
+        <option value="REAL">🛰 Live Device GPS (Hardware Satellite Lock)</option>
+        <option value="INSIDE">🏢 Simulate Inside Office (12.5 m / 25m Limit)</option>
+        <option value="EDGE">⚠️ Simulate Boundary Edge (24.5 m / 25m Limit)</option>
+        <option value="OUTSIDE">🚫 Simulate Outside Office (42.0 m / 25m Limit)</option>
+      </select>
+    </div>
+    <div style="margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;">
+      <button type="button" class="small-btn danger-btn full" id="demoResetBtn">🗑 Reset Today's Attendance (Test Check-in Again)</button>
+    </div>
+  </div>
+</div></div>
 <div class="stack">
 <div class="panel"><div class="panel-head"><div><h2>My Details</h2><p class="muted">Assigned office &amp; role</p></div></div><dl class="details" id="myDetails"></dl></div>
 <div class="panel"><div class="panel-head"><div><h2>Attendance Policy</h2><p class="muted">Current office rules</p></div></div><ul class="policy" id="policyList"></ul></div>

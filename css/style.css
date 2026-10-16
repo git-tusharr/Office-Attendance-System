@@ -42,3 +42,26 @@ tr.totals td{font-weight:800;background:#f8fafc}
 #histApproval{max-width:240px}#histMonth{max-width:200px}
 .message.info{display:block;color:var(--blue);background:var(--blue-bg)}.message.warning{display:block;color:var(--yellow);background:var(--yellow-bg)}
 #locInfo[hidden],#retryLocBtn[hidden]{display:none}#retryLocBtn{margin-top:4px}
+/* ===== GPS Geofence Telemetry & Accuracy Widget ===== */
+.geo-telemetry{background:#f8fafc;border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px auto;max-width:460px;text-align:left}
+.geo-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.geo-title{font-weight:700;font-size:13px;color:var(--dark);display:flex;align-items:center;gap:6px}
+.geo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center;margin-bottom:12px}
+.geo-item{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 6px}
+.geo-item small{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
+.geo-item strong{display:block;font-size:14px;color:var(--dark);font-weight:800}
+.geo-meter-wrap{margin-top:10px}
+.geo-meter-bar{height:9px;background:#eaecf0;border-radius:99px;position:relative;overflow:hidden}
+.geo-meter-fill{height:100%;width:0%;border-radius:99px;transition:width .4s ease,background .3s;background:var(--green)}
+.geo-meter-fill.in-range{background:var(--green)}
+.geo-meter-fill.warning{background:var(--yellow)}
+.geo-meter-fill.out-range{background:var(--red)}
+.geo-meter-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:5px}
+.geo-meter-labels .limit-marker{font-weight:700;color:var(--primary)}
+.loc-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 7px;border-radius:6px;background:#ecfdf3;color:#067647;border:1px solid #abefc6}
+.loc-badge.out{background:#fef3f2;color:#b42318;border-color:#fecdca}
+.small-btn.danger-btn{background:var(--red-bg);color:var(--red);border:1px solid #fecdca}
+.small-btn.danger-btn:hover{background:#fee4e2}
+.reset-btn-wrap{margin-top:12px;display:flex;justify-content:center}
+
+
